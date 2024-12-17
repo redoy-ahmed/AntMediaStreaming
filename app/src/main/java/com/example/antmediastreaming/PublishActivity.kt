@@ -32,7 +32,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import io.antmedia.webrtcandroidframework.api.DefaultDataChannelObserver
 import io.antmedia.webrtcandroidframework.api.DefaultWebRTCListener
+import io.antmedia.webrtcandroidframework.api.IDataChannelObserver
 import io.antmedia.webrtcandroidframework.api.IWebRTCClient
 import io.antmedia.webrtcandroidframework.api.IWebRTCListener
 import org.webrtc.SurfaceViewRenderer
@@ -140,23 +142,24 @@ class PublishActivity : ComponentActivity() {
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
             .setLocalVideoRenderer(localRenderer)
-            .setServerUrl(ServerInfo.SERVER_URL)
+            .setServerUrl(ServerInfo.SERVER_URL_PLAY_TEST)
             .setActivity(this)
             .setInitiateBeforeStream(initBeforeStream)
             .setBluetoothEnabled(bluetoothEnabled)
             .setWebRTCListener(createWebRTCListener())
+            .setDataChannelObserver(createDataChannelObserver())
             .build()
     }
 
     private fun startStopStream(onStreamToggle: (Boolean) -> Unit) {
         webRTCClient?.let {
-            if (!it.isStreaming(ServerInfo.STREAM_ID)) {
+            if (!it.isStreaming(ServerInfo.STREAM_ID_PLAY_TEST)) {
                 Log.i("PublishActivity", "Calling publish start")
-                it.publish(ServerInfo.STREAM_ID)
+                it.publish(ServerInfo.STREAM_ID_PLAY_TEST)
                 onStreamToggle(true)
             } else {
                 Log.i("PublishActivity", "Calling publish stop")
-                it.stop(ServerInfo.STREAM_ID)
+                it.stop(ServerInfo.STREAM_ID_PLAY_TEST)
                 onStreamToggle(false)
             }
         }
@@ -172,6 +175,15 @@ class PublishActivity : ComponentActivity() {
             override fun onPublishFinished(streamId: String) {
                 super.onPublishFinished(streamId)
                 Log.i("PublishActivity", "Publish finished")
+            }
+        }
+    }
+
+    private fun createDataChannelObserver(): IDataChannelObserver {
+        return object : DefaultDataChannelObserver() {
+            override fun textMessageReceived(messageText: String) {
+                super.textMessageReceived(messageText)
+                Toast.makeText(this@PublishActivity, "Text message received: $messageText", Toast.LENGTH_LONG).show()
             }
         }
     }
