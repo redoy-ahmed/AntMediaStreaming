@@ -86,15 +86,10 @@ class PublishActivity : ComponentActivity() {
                 .padding(16.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                /*AndroidView(
-                    factory = { SurfaceViewRenderer(context).apply { init(null, null) } },
-                    modifier = Modifier.fillMaxSize()
-                )*/
-
-                AndroidView(
+              AndroidView(
                     factory = { context ->
                         SurfaceViewRenderer(context).apply {
-                            init(null, null) // Initialize the renderer
+                            init(null, null)
                         }
                     },
                     modifier = Modifier.fillMaxSize()
@@ -147,12 +142,6 @@ class PublishActivity : ComponentActivity() {
             .setBluetoothEnabled(bluetoothEnabled)
             .setWebRTCListener(createWebRTCListener())
             .build()
-    }
-
-    private fun getSurfaceViewRenderer(): SurfaceViewRenderer {
-        return SurfaceViewRenderer(this).apply {
-            init(null, null)
-        }
     }
 
     private fun startStopStream(streamId: String, onStreamToggle: (Boolean) -> Unit) {
