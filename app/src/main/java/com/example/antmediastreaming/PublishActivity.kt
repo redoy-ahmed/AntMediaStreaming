@@ -43,10 +43,15 @@ class PublishActivity : ComponentActivity() {
     private var bluetoothEnabled = false
     private var initBeforeStream = false
 
+    private lateinit var localRenderer: SurfaceViewRenderer
+
     private val serverURL: String = "wss://antmedia.workuplift.com/live/websocket"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        localRenderer = SurfaceViewRenderer(this)
+
         setContent {
             PublishScreen()
         }
@@ -70,7 +75,11 @@ class PublishActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             if (initBeforeStream) {
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.CAMERA
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
                     createWebRTCClient()
                 } else {
                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -86,11 +95,9 @@ class PublishActivity : ComponentActivity() {
                 .padding(16.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-              AndroidView(
-                    factory = { context ->
-                        SurfaceViewRenderer(context).apply {
-                            init(null, null)
-                        }
+                AndroidView(
+                    factory = {
+                        localRenderer
                     },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -109,9 +116,18 @@ class PublishActivity : ComponentActivity() {
 
             Button(
                 onClick = {
-                    startStopStream(streamId) { streaming ->
-                        isStreaming = streaming
-                        statusText = if (streaming) "Live" else "Disconnected"
+                    // Request permission if not granted yet
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        startStopStream(streamId) { streaming ->
+                            isStreaming = streaming
+                            statusText = if (streaming) "Live" else "Disconnected"
+                        }
+                    } else {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -135,19 +151,13 @@ class PublishActivity : ComponentActivity() {
 
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
-            .setLocalVideoRenderer(getSurfaceViewRenderer())
+            .setLocalVideoRenderer(localRenderer)
             .setServerUrl(serverURL)
             .setActivity(this)
             .setInitiateBeforeStream(initBeforeStream)
             .setBluetoothEnabled(bluetoothEnabled)
             .setWebRTCListener(createWebRTCListener())
             .build()
-    }
-
-    private fun getSurfaceViewRenderer(): SurfaceViewRenderer {
-        return SurfaceViewRenderer(this).apply {
-            init(null, null)
-        }
     }
 
     private fun startStopStream(streamId: String, onStreamToggle: (Boolean) -> Unit) {
@@ -180,7 +190,7 @@ class PublishActivity : ComponentActivity() {
 
     @Composable
     @Preview
-    fun PreviewPublishScreen(){
+    fun PreviewPublishScreen() {
         PublishScreen()
     }
 }

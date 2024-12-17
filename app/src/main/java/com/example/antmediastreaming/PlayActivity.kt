@@ -40,6 +40,7 @@ class PlayActivity : ComponentActivity() {
     private var webRTCClient: IWebRTCClient? = null
     private var streamId by mutableStateOf("streamId_JmvO8hEmT")
     private var bluetoothEnabled = false
+    private lateinit var remoteRenderer: SurfaceViewRenderer
 
     private val serverURL: String = "wss://test.antmedia.io:5443/WebRTCAppEE/websocket"
 
@@ -48,6 +49,8 @@ class PlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        remoteRenderer = SurfaceViewRenderer(this)
 
         setContent {
             PlayScreen()
@@ -95,10 +98,8 @@ class PlayActivity : ComponentActivity() {
 
                 // WebRTC SurfaceViewRenderer Placeholder
                 AndroidView(
-                    factory = { context ->
-                        SurfaceViewRenderer(context).apply {
-                            init(null, null)
-                        }
+                    factory = {
+                        remoteRenderer
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -149,6 +150,7 @@ class PlayActivity : ComponentActivity() {
 
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
+            .addRemoteVideoRenderer(remoteRenderer)
             .setServerUrl(serverURL)
             .setActivity(this)
             .setBluetoothEnabled(bluetoothEnabled)
