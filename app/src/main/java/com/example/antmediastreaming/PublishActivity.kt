@@ -135,13 +135,19 @@ class PublishActivity : ComponentActivity() {
 
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
-            //.setLocalVideoRenderer(getSurfaceViewRenderer())
+            .setLocalVideoRenderer(getSurfaceViewRenderer())
             .setServerUrl(serverURL)
             .setActivity(this)
             .setInitiateBeforeStream(initBeforeStream)
             .setBluetoothEnabled(bluetoothEnabled)
             .setWebRTCListener(createWebRTCListener())
             .build()
+    }
+
+    private fun getSurfaceViewRenderer(): SurfaceViewRenderer {
+        return SurfaceViewRenderer(this).apply {
+            init(null, null)
+        }
     }
 
     private fun startStopStream(streamId: String, onStreamToggle: (Boolean) -> Unit) {
