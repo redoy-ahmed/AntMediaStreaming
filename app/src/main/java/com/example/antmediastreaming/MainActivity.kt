@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,6 +40,7 @@ class MainActivity : ComponentActivity() {
         return listOf(
             ActivityLink(Intent(this, PublishActivity::class.java), "Publish"),
             ActivityLink(Intent(this, PlayActivity::class.java), "Play"),
+            ActivityLink(Intent(this, FloatingPlayActivity::class.java), "Floating Play"),
         )
     }
 
@@ -53,7 +53,8 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.background(color = Color.Black),
             columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(activities) { activity ->
                 ActivityButton(label = activity.label) {
