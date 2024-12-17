@@ -10,12 +10,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,12 +40,10 @@ import org.webrtc.SurfaceViewRenderer
 class PlayActivity : ComponentActivity() {
 
     private var webRTCClient: IWebRTCClient? = null
-    private var streamId by mutableStateOf("streamId_JmvO8hEmT")
     private var bluetoothEnabled = false
     private lateinit var remoteRenderer: SurfaceViewRenderer
 
-    private val serverURL: String = "wss://test.antmedia.io:5443/WebRTCAppEE/websocket"
-
+    var isPlaying by mutableStateOf(false)
     var statusText by mutableStateOf("Disconnected")
     var statusColor by mutableStateOf(Color.Red)
 
@@ -68,66 +68,48 @@ class PlayActivity : ComponentActivity() {
             if (allGranted) {
                 startStopStream()
             } else {
-                Toast.makeText(context, "Play permissions are not granted.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Play permissions are not granted.", Toast.LENGTH_LONG)
+                    .show()
             }
         }
 
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Status Text
-                Text(
-                    text = statusText,
-                    color = statusColor,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+        Column(
+            modifier = Modifier
+                .background(color = Color.Black)
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = statusText,
+                color = statusColor,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
-                // Stream ID Input
-                var inputStreamId by remember { mutableStateOf(streamId) }
-                OutlinedTextField(
-                    value = inputStreamId,
-                    onValueChange = { inputStreamId = it },
-                    label = { Text("Stream ID") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // WebRTC SurfaceViewRenderer Placeholder
+            Box(modifier = Modifier.weight(1f)) {
                 AndroidView(
                     factory = {
                         remoteRenderer
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .background(Color.Black)
+                    modifier = Modifier.fillMaxSize()
                 )
+            }
 
-                // Start/Stop Button
-                Button(
-                    onClick = {
-                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                            launcher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
-                        } else {
-                            startStopStream()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Start/Stop")
-                }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Send Message Button
-                Button(
-                    onClick = { showSendDataChannelMessageDialog() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Send Message via Data Channel")
-                }
+            Button(
+                onClick = {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        launcher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
+                    } else {
+                        startStopStream()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isPlaying) "Stop" else "Play")
             }
         }
     }
@@ -137,12 +119,12 @@ class PlayActivity : ComponentActivity() {
             createWebRTCClient()
         }
 
-        if (!webRTCClient!!.isStreaming(streamId)) {
-            webRTCClient!!.play(streamId)
+        if (!webRTCClient!!.isStreaming(ServerInfo.STREAM_ID)) {
+            webRTCClient!!.play(ServerInfo.STREAM_ID)
             statusText = "Connecting..."
             statusColor = Color.Blue
         } else {
-            webRTCClient!!.stop(streamId)
+            webRTCClient!!.stop(ServerInfo.STREAM_ID)
             statusText = "Disconnected"
             statusColor = Color.Red
         }
@@ -151,7 +133,7 @@ class PlayActivity : ComponentActivity() {
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
             .addRemoteVideoRenderer(remoteRenderer)
-            .setServerUrl(serverURL)
+            .setServerUrl(ServerInfo.SERVER_URL)
             .setActivity(this)
             .setBluetoothEnabled(bluetoothEnabled)
             .setVideoCallEnabled(false)
@@ -165,23 +147,21 @@ class PlayActivity : ComponentActivity() {
                 super.onPlayStarted(streamId)
                 statusText = "Streaming started"
                 statusColor = Color.Green
+                isPlaying = true
             }
 
             override fun onPlayFinished(streamId: String) {
                 super.onPlayFinished(streamId)
                 statusText = "Streaming stopped"
                 statusColor = Color.Red
+                isPlaying = false
             }
         }
     }
 
-    private fun showSendDataChannelMessageDialog() {
-        // Show dialog to send data via DataChannel (not implemented in Compose for simplicity)
-    }
-
     @Composable
     @Preview
-    fun PreviewPlayScreen(){
+    fun PreviewPlayScreen() {
         PlayScreen()
     }
 }

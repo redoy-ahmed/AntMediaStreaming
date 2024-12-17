@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
@@ -48,10 +50,10 @@ class MainActivity : ComponentActivity() {
     fun ActivityGrid(activities: List<ActivityLink>) {
         val context = LocalContext.current
         LazyVerticalGrid(
+            modifier = Modifier.background(color = Color.Black),
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(activities) { activity ->
                 ActivityButton(label = activity.label) {
@@ -68,11 +70,12 @@ class MainActivity : ComponentActivity() {
             color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
+                .fillMaxHeight()
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable { onClick() }
-                .padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium
+                .padding(50.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
         )
     }
 

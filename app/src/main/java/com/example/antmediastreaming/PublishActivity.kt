@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,8 +45,6 @@ class PublishActivity : ComponentActivity() {
 
     private lateinit var localRenderer: SurfaceViewRenderer
 
-    private val serverURL: String = "wss://antmedia.workuplift.com/live/websocket"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,7 +57,6 @@ class PublishActivity : ComponentActivity() {
 
     @Composable
     fun PublishScreen() {
-        var streamId by remember { mutableStateOf("streamId_JmvO8hEmT") }
         var isStreaming by remember { mutableStateOf(false) }
         var statusText by remember { mutableStateOf("Disconnected") }
         val context = LocalContext.current
@@ -91,9 +88,22 @@ class PublishActivity : ComponentActivity() {
 
         Column(
             modifier = Modifier
+                .background(Color.Black)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            Text(
+                text = statusText,
+                color = when (statusText) {
+                    "Live" -> Color.Green
+                    "Reconnecting" -> Color.Blue
+                    else -> Color.Red
+                },
+                modifier = Modifier.padding(8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Box(modifier = Modifier.weight(1f)) {
                 AndroidView(
                     factory = {
@@ -105,24 +115,14 @@ class PublishActivity : ComponentActivity() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TextField(
-                value = streamId,
-                onValueChange = { streamId = it },
-                label = { Text("Stream ID") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = {
-                    // Request permission if not granted yet
                     if (ContextCompat.checkSelfPermission(
                             context,
                             Manifest.permission.CAMERA
                         ) == PackageManager.PERMISSION_GRANTED
                     ) {
-                        startStopStream(streamId) { streaming ->
+                        startStopStream() { streaming ->
                             isStreaming = streaming
                             statusText = if (streaming) "Live" else "Disconnected"
                         }
@@ -134,25 +134,13 @@ class PublishActivity : ComponentActivity() {
             ) {
                 Text(if (isStreaming) "Stop" else "Start")
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = statusText,
-                color = when (statusText) {
-                    "Live" -> Color.Green
-                    "Reconnecting" -> Color.Blue
-                    else -> Color.Red
-                },
-                modifier = Modifier.padding(8.dp)
-            )
         }
     }
 
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
             .setLocalVideoRenderer(localRenderer)
-            .setServerUrl(serverURL)
+            .setServerUrl(ServerInfo.SERVER_URL)
             .setActivity(this)
             .setInitiateBeforeStream(initBeforeStream)
             .setBluetoothEnabled(bluetoothEnabled)
@@ -160,15 +148,15 @@ class PublishActivity : ComponentActivity() {
             .build()
     }
 
-    private fun startStopStream(streamId: String, onStreamToggle: (Boolean) -> Unit) {
+    private fun startStopStream(onStreamToggle: (Boolean) -> Unit) {
         webRTCClient?.let {
-            if (!it.isStreaming(streamId)) {
+            if (!it.isStreaming(ServerInfo.STREAM_ID)) {
                 Log.i("PublishActivity", "Calling publish start")
-                it.publish(streamId)
+                it.publish(ServerInfo.STREAM_ID)
                 onStreamToggle(true)
             } else {
                 Log.i("PublishActivity", "Calling publish stop")
-                it.stop(streamId)
+                it.stop(ServerInfo.STREAM_ID)
                 onStreamToggle(false)
             }
         }
