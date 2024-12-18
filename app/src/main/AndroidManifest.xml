@@ -57,6 +57,7 @@
 
         <activity android:name=".PlayActivity"
             android:exported="true"
+            android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AntMediaStreaming"
             android:configChanges="orientation|keyboard|screenSize|smallestScreenSize|screenLayout"/>
 
