@@ -3,6 +3,7 @@ package com.example.antmediastreaming
 import android.Manifest
 import android.app.PictureInPictureParams
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
@@ -68,6 +69,8 @@ class PlayActivity : ComponentActivity() {
     var isPlaying by mutableStateOf(false)
     var statusText by mutableStateOf("Disconnected")
     var statusColor by mutableStateOf(Color.Red)
+
+    var isInPipMode by mutableStateOf(false)
 
     private var showDialog by mutableStateOf(false)
     private var messageText by mutableStateOf("")
@@ -171,87 +174,92 @@ class PlayActivity : ComponentActivity() {
                     )
                 }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    itemsIndexed(streams) { index, item ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(0.7f)
-                                .background(color = Color.Red)
-                        ) {
-                            AndroidView(
-                                factory = {
-                                    item.surfaceViewRenderer
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
-
-                            IconButton(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                onClick = {
-                                    stopWebRtcStream(index = index)
-                                }) {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = null,
-                                    tint = Color.White
+                if (!isInPipMode) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        itemsIndexed(streams) { index, item ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.7f)
+                                    .background(color = Color.Red)
+                            ) {
+                                AndroidView(
+                                    factory = {
+                                        item.surfaceViewRenderer
+                                    },
+                                    modifier = Modifier.fillMaxSize()
                                 )
+
+                                IconButton(
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    onClick = {
+                                        stopWebRtcStream(index = index)
+                                    }) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = null,
+                                        tint = Color.White
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
+
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (!isInPipMode) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                onClick = {
-                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                        launcher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
-                    } else {
-                        startStopStream()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isPlaying) "Stop" else "Play")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    addSecondaryWebRTCStream()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Add a stream")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (isPlaying) {
                 Button(
                     onClick = {
-                        showDialog = true
+                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                            launcher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
+                        } else {
+                            startStopStream()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Send Message")
+                    Text(if (isPlaying) "Stop" else "Play")
                 }
-            }
 
-            if (showDialog) {
-                MessageDialog(
-                    onSend = { sendMessage(it) },
-                    onDismiss = { showDialog = false }
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        addSecondaryWebRTCStream()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Add a stream")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (isPlaying) {
+                    Button(
+                        onClick = {
+                            showDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Send Message")
+                    }
+                }
+
+                if (showDialog) {
+                    MessageDialog(
+                        onSend = { sendMessage(it) },
+                        onDismiss = { showDialog = false }
+                    )
+                }
             }
         }
     }
@@ -380,6 +388,21 @@ class PlayActivity : ComponentActivity() {
         } else {
             enterPictureInPictureMode()
         }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+
+        isInPipMode = isInPictureInPictureMode
+
+        /*if (isInPictureInPictureMode) {
+
+        } else {
+
+        }*/
     }
 
     @Composable
