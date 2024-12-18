@@ -52,13 +52,11 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 class PlayActivity : ComponentActivity() {
+    private lateinit var primaryStream: StreamInfo
 
-    private var webRTCClient: IWebRTCClient? = null
-    private val webRTCClients = mutableStateListOf<IWebRTCClient?>()
-    private val remoteRenderers = mutableStateListOf<SurfaceViewRenderer>()
+    private val streams = mutableStateListOf<StreamInfo>()
 
     private var bluetoothEnabled = false
-    private lateinit var remoteRenderer: SurfaceViewRenderer
 
     var isPlaying by mutableStateOf(false)
     var statusText by mutableStateOf("Disconnected")
@@ -70,28 +68,37 @@ class PlayActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        remoteRenderer = SurfaceViewRenderer(this)
+        primaryStream = StreamInfo(
+            streamId = ServerInfo.STREAM_ID,
+            webRTCClient = null,
+            surfaceViewRenderer = SurfaceViewRenderer(this)
+        )
 
         setContent {
             PlayScreen()
         }
     }
 
-    private fun addWebRTCStream() {
-        if (remoteRenderers.size > 3) return
+    private fun addSecondaryWebRTCStream(streamId: String = ServerInfo.STREAM_ID) {
+        if (streams.size > 3) return
 
         val renderer = SurfaceViewRenderer(this)
-        remoteRenderers.add(renderer)
-        webRTCClients.add(null)
 
-        startStopStream(index = webRTCClients.lastIndex)
+        streams.add(
+            StreamInfo(
+                surfaceViewRenderer = renderer,
+                webRTCClient = null,
+                streamId = streamId
+            )
+        )
+
+        startStopStream(index = streams.lastIndex)
     }
 
     private fun stopWebRtcStream(index: Int) {
         startStopStream(index = index)
 
-        remoteRenderers.removeAt(index)
-        webRTCClients.removeAt(index)
+        streams.removeAt(index)
     }
 
     @Composable
@@ -133,7 +140,7 @@ class PlayActivity : ComponentActivity() {
                 ) {
                     AndroidView(
                         factory = {
-                            remoteRenderer
+                            primaryStream.surfaceViewRenderer
                         },
                         modifier = Modifier.fillMaxSize()
                     )
@@ -145,7 +152,7 @@ class PlayActivity : ComponentActivity() {
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    itemsIndexed(remoteRenderers) { index, item ->
+                    itemsIndexed(streams) { index, item ->
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -154,7 +161,7 @@ class PlayActivity : ComponentActivity() {
                         ) {
                             AndroidView(
                                 factory = {
-                                    item
+                                    item.surfaceViewRenderer
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -195,7 +202,7 @@ class PlayActivity : ComponentActivity() {
 
             Button(
                 onClick = {
-                    addWebRTCStream()
+                    addSecondaryWebRTCStream()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -225,11 +232,13 @@ class PlayActivity : ComponentActivity() {
     }
 
     private fun sendMessage(message: String) {
-        if (webRTCClient != null && webRTCClient!!.isDataChannelEnabled) {
+        val webRTCClient = primaryStream.webRTCClient
+
+        if (webRTCClient != null && webRTCClient.isDataChannelEnabled) {
 
             val buffer = ByteBuffer.wrap(message.toByteArray(StandardCharsets.UTF_8))
             val buf = DataChannel.Buffer(buffer, false)
-            webRTCClient!!.sendMessageViaDataChannel(ServerInfo.STREAM_ID, buf)
+            webRTCClient.sendMessageViaDataChannel(ServerInfo.STREAM_ID, buf)
 
             Toast.makeText(this, "Message sent: $message", Toast.LENGTH_LONG).show()
         } else {
@@ -267,61 +276,53 @@ class PlayActivity : ComponentActivity() {
     }
 
     private fun startStopStream() {
-        if (webRTCClient == null) {
-            createWebRTCClient()
+        val streamId = primaryStream.streamId
+        val renderer = primaryStream.surfaceViewRenderer
+
+        if (primaryStream.webRTCClient == null) {
+            primaryStream = primaryStream.copy(webRTCClient = createWebRTCClient(renderer))
         }
 
-        if (!webRTCClient!!.isStreaming(ServerInfo.STREAM_ID)) {
-            webRTCClient!!.play(ServerInfo.STREAM_ID)
-            statusText = "Connecting..."
-            statusColor = Color.Blue
-        } else {
-            webRTCClient!!.stop(ServerInfo.STREAM_ID)
-            statusText = "Disconnected"
-            statusColor = Color.Red
+        primaryStream.webRTCClient?.let {
+            if (!it.isStreaming(streamId)) {
+                it.play(streamId)
+                statusText = "Connecting..."
+                statusColor = Color.Blue
+            } else {
+                it.stop(streamId)
+                statusText = "Disconnected"
+                statusColor = Color.Red
+            }
         }
+
     }
 
     private fun startStopStream(index: Int) {
-        if (webRTCClients[index] == null) {
-            createWebRTCClient(index)
+        val streamId = streams[index].streamId
+        val renderer = streams[index].surfaceViewRenderer
+
+        if (streams[index].webRTCClient == null) {
+            streams[index] = streams[index].copy(webRTCClient = createWebRTCClient(renderer))
         }
 
-        if (!webRTCClients[index]!!.isStreaming(ServerInfo.STREAM_ID)) {
-            webRTCClients[index]!!.play(ServerInfo.STREAM_ID)
-            /*statusText = "Connecting..."
-            statusColor = Color.Blue*/
-        } else {
-            webRTCClients[index]!!.stop(ServerInfo.STREAM_ID)
-
-            /*statusText = "Disconnected"
-            statusColor = Color.Red*/
+        streams[index].webRTCClient?.let {
+            if (!it.isStreaming(streamId)) {
+                it.play(streamId)
+            } else {
+                it.stop(streamId)
+            }
         }
     }
 
 
-    private fun createWebRTCClient() {
-        webRTCClient = IWebRTCClient.builder()
-            .addRemoteVideoRenderer(remoteRenderer)
-            .setServerUrl(ServerInfo.PLAY_URL)
-            .setActivity(this)
-            .setBluetoothEnabled(bluetoothEnabled)
-            .setVideoCallEnabled(false)
-            .setWebRTCListener(createWebRTCListener())
-            .build()
-    }
-
-    private fun createWebRTCClient(index: Int) {
-        val renderer = remoteRenderers[index]
-        webRTCClients[index] = IWebRTCClient.builder()
-            .addRemoteVideoRenderer(renderer)
-            .setServerUrl(ServerInfo.PLAY_URL)
-            .setActivity(this)
-            .setBluetoothEnabled(bluetoothEnabled)
-            .setVideoCallEnabled(false)
-            .setWebRTCListener(createWebRTCListener())
-            .build()
-    }
+    private fun createWebRTCClient(renderer: SurfaceViewRenderer) = IWebRTCClient.builder()
+        .addRemoteVideoRenderer(renderer)
+        .setServerUrl(ServerInfo.PLAY_URL)
+        .setActivity(this)
+        .setBluetoothEnabled(bluetoothEnabled)
+        .setVideoCallEnabled(false)
+        .setWebRTCListener(createWebRTCListener())
+        .build()
 
 
     private fun createWebRTCListener(): IWebRTCListener {
