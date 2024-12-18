@@ -133,32 +133,33 @@ class PlayActivity : ComponentActivity() {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Row {
-                IconButton(
-                    onClick = {
-                        enterPIPMode()
+            if (!isInPipMode) {
+                Row {
+                    IconButton(
+                        onClick = {
+                            enterPIPMode()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
                     }
-                ) {
-                    Icon(
-                        Icons.Filled.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = Color.White
+
+                    Text(
+                        text = statusText,
+                        textAlign = TextAlign.End,
+                        color = statusColor,
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .padding(bottom = 8.dp)
+                            .weight(1f)
                     )
                 }
 
-                Text(
-                    text = statusText,
-                    textAlign = TextAlign.End,
-                    color = statusColor,
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .weight(1f)
-                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
-
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Box(modifier = Modifier.weight(1f)) {
                 Box(
@@ -397,12 +398,6 @@ class PlayActivity : ComponentActivity() {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
 
         isInPipMode = isInPictureInPictureMode
-
-        /*if (isInPictureInPictureMode) {
-
-        } else {
-
-        }*/
     }
 
     @Composable
