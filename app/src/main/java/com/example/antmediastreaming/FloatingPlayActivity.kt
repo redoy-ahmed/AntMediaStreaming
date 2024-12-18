@@ -149,7 +149,7 @@ class FloatingPlayActivity : ComponentActivity() {
 
             val buffer = ByteBuffer.wrap(message.toByteArray(StandardCharsets.UTF_8))
             val buf = DataChannel.Buffer(buffer, false)
-            webRTCClient!!.sendMessageViaDataChannel(ServerInfo.STREAM_ID_PLAY_TEST, buf)
+            webRTCClient!!.sendMessageViaDataChannel(ServerInfo.STREAM_ID, buf)
 
             Toast.makeText(this, "Message sent: $message", Toast.LENGTH_LONG).show()
         } else {
@@ -191,12 +191,12 @@ class FloatingPlayActivity : ComponentActivity() {
             createWebRTCClient()
         }
 
-        if (!webRTCClient!!.isStreaming(ServerInfo.STREAM_ID_PLAY_TEST)) {
-            webRTCClient!!.play(ServerInfo.STREAM_ID_PLAY_TEST)
+        if (!webRTCClient!!.isStreaming(ServerInfo.STREAM_ID)) {
+            webRTCClient!!.play(ServerInfo.STREAM_ID)
             statusText = "Connecting..."
             statusColor = Color.Blue
         } else {
-            webRTCClient!!.stop(ServerInfo.STREAM_ID_PLAY_TEST)
+            webRTCClient!!.stop(ServerInfo.STREAM_ID)
             statusText = "Disconnected"
             statusColor = Color.Red
         }
@@ -205,7 +205,7 @@ class FloatingPlayActivity : ComponentActivity() {
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
             .addRemoteVideoRenderer(remoteRenderer)
-            .setServerUrl(ServerInfo.SERVER_URL_PLAY_TEST)
+            .setServerUrl(ServerInfo.PLAY_URL)
             .setActivity(this)
             .setBluetoothEnabled(bluetoothEnabled)
             .setVideoCallEnabled(false)

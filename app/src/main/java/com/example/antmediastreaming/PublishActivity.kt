@@ -142,7 +142,7 @@ class PublishActivity : ComponentActivity() {
     private fun createWebRTCClient() {
         webRTCClient = IWebRTCClient.builder()
             .setLocalVideoRenderer(localRenderer)
-            .setServerUrl(ServerInfo.SERVER_URL_PLAY_TEST)
+            .setServerUrl(ServerInfo.PUBLISH_URL)
             .setActivity(this)
             .setInitiateBeforeStream(initBeforeStream)
             .setBluetoothEnabled(bluetoothEnabled)
@@ -153,13 +153,13 @@ class PublishActivity : ComponentActivity() {
 
     private fun startStopStream(onStreamToggle: (Boolean) -> Unit) {
         webRTCClient?.let {
-            if (!it.isStreaming(ServerInfo.STREAM_ID_PLAY_TEST)) {
+            if (!it.isStreaming(ServerInfo.STREAM_ID)) {
                 Log.i("PublishActivity", "Calling publish start")
-                it.publish(ServerInfo.STREAM_ID_PLAY_TEST)
+                it.publish(ServerInfo.STREAM_ID)
                 onStreamToggle(true)
             } else {
                 Log.i("PublishActivity", "Calling publish stop")
-                it.stop(ServerInfo.STREAM_ID_PLAY_TEST)
+                it.stop(ServerInfo.STREAM_ID)
                 onStreamToggle(false)
             }
         }
